@@ -93,7 +93,7 @@ float linePosition() {
         uint16_t v = analogRead(_pins[i]);
         _normalized[i] = map(v, minU, kAdcMax, 0, 100);
         _normalized[i] = constrain(_normalized[i], 0, 100);
-        if (_debug){Serial.print(" | "); Serial.print(_normalized[i]);}
+       if (_debug){Serial.print(" | "); Serial.print(_normalized[i]);}
 
     }
     if (_debug)Serial.println("");
