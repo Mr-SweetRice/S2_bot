@@ -16,12 +16,16 @@ class Motor{
     long long _lastCount =0;
     long _lastMs,_lastMs2 =0;
     float _rpm =0;
-    float _kpm = 0.04;  
-    float _kim = 0.000016;             
+    float _kpm = 0.005;  
+    float _kim = 0.000003;             
     float _eintegral = 0;                
     int   _upwm = 0;   
     float _vFilt =0;
     float _vPrev=0;
+    unsigned long _now,_now2 = 0;
+    long _c,_dCounts=0;
+    float _dt,_rpmRaw =0;
+    float _rpm2,_e2,_dt2=0;
 
 
   public:
@@ -45,6 +49,7 @@ class Motor{
     stop();
   }
   void controlPwm(int pwm, bool dir) {
+    pwm = constrain(pwm,0,820);
     digitalWrite(_IN1, dir);
     digitalWrite(_IN2, !dir);
     ledcWrite(_PWMPin, pwm);
@@ -53,7 +58,9 @@ class Motor{
     ledcWrite(_PWMPin, 0);
   }
 
+  
   float getRpm(){
+    _now = millis();
     // if (abs(_enc.getCount()) > 8) {
     //   long c =abs( _enc.getCount());
     //   long currT = micros();
@@ -63,48 +70,48 @@ class Motor{
     //   _lastMs  = currT;
     //   _enc.clearCount();
     // }
-    unsigned long now = millis();
-    if (now - _lastMs >= amostragem_ms) {
-      long c = _enc.getCount();
+    if (_now - _lastMs >= amostragem_ms) {
+      _c = _enc.getCount();
       //Serial.println(c);
-      long dCounts = c - _lastCount;
-      _lastCount = c;
-      float dt = (now - _lastMs) / 1000.0f;  // tempo real em segundos
-      _lastMs = now;
-      float rpmRaw = ((float)llabs(dCounts) / pulseC) * (60.0f / dt);
+      _dCounts = _c - _lastCount;
+      _lastCount = _c;
+      _dt = (_now - _lastMs) / 1000.0f;  // tempo real em segundos
+      _lastMs = _now;
+      _rpmRaw = ((float)llabs(_dCounts) / pulseC) * (60.0f / _dt);
 
-      _vFilt = 0.854* _vFilt + 0.0728* rpmRaw + 0.0728* _vPrev; //a+b ≈ 1
-      _vPrev = rpmRaw;
+      _vFilt = 0.854* _vFilt + 0.0728* _rpmRaw + 0.0728* _vPrev; //a+b ≈ 1
+      _vPrev = _rpmRaw;
       _rpm = _vFilt;  // guarda RPM filtrado
     }
     return _rpm;
   }
 
 
-
-  void rpmMotor(int vel, bool dir){
-    unsigned long now2 = millis();
+  
+  void rpmMotor(int vel, bool dir){ 
+    _now2 = millis();
     _kpm =gP;_kim=gI;
-    float rpm = getRpm();
-    float e = vel-_vFilt; 
-    float dt = (now2 - _lastMs2);
-    Serial.print(dt);
-    _eintegral = _eintegral + e*dt; 
-    _upwm = (_kpm*e*dt + _kim*_eintegral)+_upwm;
-    _lastMs2 = now2;
-    if(_upwm>700)_upwm=700;if(_upwm<0)_upwm=0;
+    _rpm2 = getRpm();
+    _e2 = vel-_vFilt; 
+    _dt2 = (_now2 - _lastMs2);
+    // Serial.print(_dt2);
+    _eintegral = _eintegral + _e2*_dt2; 
+    _upwm = (_kpm*_e2*_dt2 + _kim*_eintegral)+_upwm;
+    _lastMs2 = _now2;
+    _eintegral = constrain(_eintegral,-200000, 200000);
+    if(_upwm>800)_upwm=800;if(_upwm<0)_upwm=0;
     controlPwm(_upwm ,dir);
 
-    Serial.print(" | ");
-    Serial.print((_kpm*e*dt + _kim*_eintegral));
-    Serial.print(" | ");
-    Serial.print(e);
-    Serial.print(" | ");
-    Serial.print(_upwm);
-    Serial.print(" | ");
-    Serial.print(_eintegral);
-    Serial.print(" | ");
-    Serial.println(rpm);
+    // Serial.print(" | ");
+    // Serial.print((_kpm*e*dt + _kim*_eintegral));
+    // Serial.print(" | ");
+    // Serial.print(e);
+    // Serial.print(" | ");
+    // Serial.print(_upwm);
+    // Serial.print(" | ");
+    // Serial.print(_eintegral);
+    // Serial.print(" | ");
+    // Serial.println(rpm);
 
 
   }

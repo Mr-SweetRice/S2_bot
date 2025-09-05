@@ -1,3 +1,5 @@
+#pragma once
+
 class TimerMicros{
 private:
     unsigned long intervalo;

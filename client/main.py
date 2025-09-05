@@ -28,7 +28,7 @@ LINE_FMT = "<HB"
 LINE_SIZE = struct.calcsize(LINE_FMT)
 TIME_FMT = "<I"
 TIME_SIZE = struct.calcsize(TIME_FMT)
-POS_FMT = "<HH"   
+POS_FMT = "<HHH"   
 POS_SIZE = struct.calcsize(POS_FMT)
 
 # Fila de updates UI
@@ -80,6 +80,9 @@ class UI32ESP:
         self.pos_real = []            # série real
         self.line_target = None
         self.line_real = None
+        self.pos_real2 = []
+        self.line_real2 = None
+
         self.t0 = time.time()
 
 
@@ -95,8 +98,9 @@ class UI32ESP:
 
         # Gráfico posição (target x real) ao longo do tempo
         self.ax_pos = self.fig.add_subplot(grid[2, 0:2])
-        (self.line_target,) = self.ax_pos.plot([], [], color="tab:blue")     # sem label
+        # (self.line_target,) = self.ax_pos.plot([], [], color="tab:blue")     # sem label
         (self.line_real,)   = self.ax_pos.plot([], [], color="tab:orange")   # sem label
+        (self.line_real2,) = self.ax_pos.plot([], [], color="tab:red")
         self.hline_target   = self.ax_pos.axhline(0, linestyle="--", color="tab:green")  # sem label
         self.ax_pos.set_xlabel("t (s)")
         self.ax_pos.set_ylabel("posição")
@@ -159,9 +163,9 @@ class UI32ESP:
         y = bottom + (height - box_h) / 1.5
         shift = -0.08
 
-        ax_p = plt.axes([left + shift + 0 * box_w, y, box_w - pad_x, box_h])
-        ax_i = plt.axes([left + shift + 1.2 * box_w, y, box_w - pad_x, box_h])
-        ax_d = plt.axes([left + shift + 2.5 * box_w, y, box_w - pad_x, box_h])
+        ax_p = plt.axes([left + shift + 0 * box_w, y *1, box_w - pad_x, box_h])
+        ax_i = plt.axes([left + shift + 0 * box_w, y*0.95, box_w - pad_x, box_h])
+        ax_d = plt.axes([left + shift + 0 * box_w, y*0.9, box_w - pad_x, box_h])
 
         self.tb_p = TextBox(ax_p, "P:", initial="0.0", color="none", hovercolor="none")
         self.tb_i = TextBox(ax_i, "I:", initial="0.0", color="none", hovercolor="none")
@@ -256,8 +260,9 @@ class UI32ESP:
                     _, millis_now = item
                     self.update_time(millis_now)
                 elif tag == "pos":
-                    _, target, real = item
-                    self.update_pos(target, real)
+                    _, target, real, real2 = item
+                    self.update_pos(target, real, real2)
+
         except queue.Empty:
             pass
 
@@ -328,35 +333,35 @@ class UI32ESP:
         if self.fig:
             self.fig.canvas.draw_idle()
 
-    def update_pos(self, target, real):
+    def update_pos(self, target, real, real2):
         t = time.time() - self.t0
         self.pos_t.append(t)
         self.pos_target.append(float(target))
         self.pos_real.append(float(real))
+        self.pos_real2.append(float(real2))
 
         WINDOW = 60.0
         while self.pos_t and (t - self.pos_t[0] > WINDOW):
-            self.pos_t.pop(0); self.pos_target.pop(0); self.pos_real.pop(0)
+            self.pos_t.pop(0); self.pos_target.pop(0); self.pos_real.pop(0); self.pos_real2.pop(0)
 
-        self.line_target.set_data(self.pos_t, self.pos_target)
+        self.hline_target.set_ydata([float(target), float(target)])
         self.line_real.set_data(self.pos_t, self.pos_real)
+        self.line_real2.set_data(self.pos_t, self.pos_real2)
 
-        # janela X dinâmica, Y fixo em 0–1000
         if self.pos_t:
             x0 = max(0, self.pos_t[0])
             x1 = self.pos_t[-1] if self.pos_t[-1] > 10 else 10
             self.ax_pos.set_xlim(x0, x1)
 
-        # atualiza linha horizontal do target atual
-        y = float(target)
-        self.hline_target.set_ydata([y, y])
+        self.hline_target.set_ydata([float(target), float(target)])
 
         if self.txt_pos is None:
             self.txt_pos = self.ax_pos.text(0.02, 0.95, "", transform=self.ax_pos.transAxes, va="top")
-        self.txt_pos.set_text(f"tgt={target}  real={real}")
+        self.txt_pos.set_text(f"tgt={target}  r1={real}  r2={real2}")
 
         if self.fig:
             self.fig.canvas.draw_idle()
+
 
 
 
@@ -418,8 +423,9 @@ class BLE32ESP:
     def parse_pos(data: bytes):
         if len(data) != POS_SIZE:
             return None
-        target, real = struct.unpack(POS_FMT, data)
-        return target, real
+        target, real, real2 = struct.unpack(POS_FMT, data)
+        return target, real, real2
+
 
 
 
@@ -482,8 +488,9 @@ class BLE32ESP:
         parsed = self.parse_pos(bytes(data))
         if not parsed:
             return
-        target, real = parsed
-        ui_queue.put(("pos", target, real))
+        target, real, real2 = parsed
+        ui_queue.put(("pos", target, real, real2))
+
 
 
     async def _write_bool(self, uuid, flag: bool):
