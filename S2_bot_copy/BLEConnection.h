@@ -9,11 +9,14 @@
 #define CONTROL_CHAR_UUID   "099f102d-d5c3-4a8d-9b0c-36f21f6ed4d9"
 #define LINE_CHAR_UUID      "2c7f3f4e-0c8a-4d5f-9f23-4a6b7a1c9b10"
 #define TIME_CHAR_UUID      "7b2c1f8a-9453-4b6c-a4f0-22c2df8b0c21"
+#define POS_CHAR_UUID      "eda62e40-db53-405b-be92-b08efcfefc36"
 #define P_CHAR_UUID         "9cec4ad9-5ac2-4bce-a6fc-95807282c60f"
 #define I_CHAR_UUID         "f99b0cad-3ebe-46a9-b68a-265fa7be0fe6"
 #define D_CHAR_UUID         "d1f23061-e268-4e96-8e56-974711ab37bb"
 
 volatile uint8_t controlFlag = 0;
+float gP = 0.0f, gI = 0.0f, gD = 0.0f;
+
 static uint32_t lastAdvKick;
 
 class ControlCallbacks;
@@ -22,8 +25,8 @@ class ServerCallbacks;
 
 typedef struct __attribute__((packed)) {
   uint16_t sensors[SENSOR_COUNT];
-  uint8_t  rpm1;
-  uint8_t  rpm2;
+  uint16_t  rpm1;
+  uint16_t  rpm2;
   uint8_t  digital_sensors[SENSOR_COUNT];
 } TelemetryPacket;
 
@@ -31,6 +34,11 @@ typedef struct __attribute__((packed)) {
   uint16_t distancia;
   uint8_t  linha_tipo;
 } LinePacket;
+
+typedef struct __attribute__((packed)) {
+  uint16_t  target;
+  uint16_t  real_data;
+} PositionPacket;
 
 static void startAdv() {
     NimBLEAdvertising* adv = NimBLEDevice::getAdvertising();
@@ -86,17 +94,17 @@ private:
     NimBLECharacteristic* pChar;
     NimBLECharacteristic* iChar;
     NimBLECharacteristic* dChar;
+    NimBLECharacteristic* posChar;  
+    PositionPacket pos{};
     TelemetryPacket pkt{};
     LinePacket lp{};
-
-    float gP = 0.0f, gI = 0.0f, gD = 0.0f;
 
 public:
     BLEConnection() {
         
     }
 
-    void setup_ble(){
+    void begin(){
         NimBLEDevice::init("32ESP");
         NimBLEDevice::setDeviceName("32ESP");
         NimBLEDevice::setPower(ESP_PWR_LVL_P7);
@@ -117,6 +125,9 @@ public:
 
         timeChar = svc->createCharacteristic(TIME_CHAR_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
         timeChar->createDescriptor("2901")->setValue("tempo(uint32)");
+
+        posChar = svc->createCharacteristic(POS_CHAR_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
+        posChar->createDescriptor("2901")->setValue("target(uint16), real(uint16)");
 
         // CONTROL
         controlChar = svc->createCharacteristic(CONTROL_CHAR_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR | NIMBLE_PROPERTY::NOTIFY);
@@ -145,18 +156,22 @@ public:
         startAdv();
     }
     void handleClientRequests() {
+      while(1){
         if (NimBLEDevice::getServer()->getConnectedCount() == 0){
-         if(!NimBLEDevice::getAdvertising()->isAdvertising() && millis() - lastAdvKick > ADV_KICK_MS) {
+        if(!NimBLEDevice::getAdvertising()->isAdvertising() && millis() - lastAdvKick > ADV_KICK_MS) {
             startAdv();
          }
-        }
+        }else{break;}
+
+      }
+
     }
 
     void verifyClient(){
         
     }
 
-    void setTelemetryData(uint16_t* sensors, uint8_t rpm1, uint8_t rpm2 , uint8_t* digital_sensors) {
+    void setTelemetryData(uint16_t* sensors, uint16_t rpm1, uint16_t rpm2, uint8_t* digital_sensors) {
         // Preencher os sensores
         for (int i = 0; i < SENSOR_COUNT; i++) {
             pkt.sensors[i] = sensors[i];
@@ -182,6 +197,13 @@ public:
         timeChar->setValue((uint8_t*)&tempo, sizeof(tempo));
         timeChar->notify();
 
+    }
+
+    void setPosition(uint16_t target,uint16_t real_data){
+        pos.target = target; 
+        pos.real_data = real_data;
+        posChar->setValue((uint8_t*)&pos, sizeof(pos));
+        posChar->notify();
     }
 
 };
