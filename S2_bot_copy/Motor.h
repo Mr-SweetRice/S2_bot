@@ -26,6 +26,7 @@ class Motor{
     long _c,_dCounts=0;
     float _dt,_rpmRaw =0;
     float _rpm2,_e2,_dt2=0;
+    long _pulses;
 
 
   public:
@@ -114,6 +115,10 @@ class Motor{
     // Serial.println(rpm);
 
 
+  }
+ long getPulse(){
+   _pulses= _enc.getCount();
+   return _pulses;
   }
 
   void printPwm(){

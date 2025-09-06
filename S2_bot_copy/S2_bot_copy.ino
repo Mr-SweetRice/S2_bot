@@ -23,9 +23,12 @@ BLEConnection ble;
 Motor motorL(PWMB,BIN1,BIN2,BENCL_A,BENCL_B );
 Motor motorR(PWMA,AIN1,AIN2,AENCL_A,AENCL_B );
 uint16_t target=500;
-TimerMicros changeControl(15000);
-unsigned long tl=0;
+TimerMicros changeControl(8000);
+TimerMicros stop(45000000);
+unsigned long lt=0;
 int mtL,mtR;
+int u =0;
+bool lastf=0;
 
 void setup() {
     Serial.begin(115200);
@@ -42,17 +45,30 @@ void loop() {
     while(!controlFlag){
       motorL.stop();
       motorR.stop();
+      uint64_t stop_pulses= contarParada(motorL.getPulse(),motorR.getPulse());
+      int pos = sensorLinha.linePosition();
+      ble.setPosition(0, pos,u );
+      lt = millis();
+      if(lastf){
+        motorL.stop();
+        motorR.stop();
+        ble.setLineData(0, 0, stop_pulses);
+        while(1);
+      }
+      // stop.reiniciar();
     }
+    // 0.7,0.00000001,0.3
     int pos = sensorLinha.linePosition();
     if(changeControl.pronto()){
-      int u =control(pos,0,gP,gI,gD);
-      mtL= 200 + u;mtR= 200 - u;
-      mtL = constrain(mtL,0,800); mtR = constrain(mtR,0,800);
+      u =control(pos,0,gP,gI,gD);
+      Serial.println(u);
+      mtL= 500 - u;mtR= 500 + u;
+      mtL = constrain(mtL,0,820); mtR = constrain(mtR,0,820);
 
     };
-    ble.setPosition(0, pos, 0);
-    motorL.rpmMotor(mtL, 1);
-    motorR.rpmMotor(mtR, 1);
+    // ble.setPosition(0, pos, u);
+    motorL.controlPwm(mtL, 1);
+    motorR.controlPwm(mtR, 1);
     // Serial.println(pos);
     // Serial.print(" | ");
     // Serial.print(mtL);
@@ -67,4 +83,9 @@ void loop() {
     //   target = rpms[i];
     // }
     // // ble.setTelemetryData(sensors, motorL.getRpm(), 200,digital_sensors );
+    // if(stop.pronto()){
+    //   motorL.stop();
+    //   motorR.stop();
+    //   while(1);
+    // }
     }

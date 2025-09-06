@@ -34,3 +34,10 @@ int control(int16_t linePosition, uint16_t target,float p, float i,float d){
     
     return u;
 }
+
+long contarParada(long pulseL,long pulseR){
+  long media = (labs(pulseL) +labs(pulseR))/2;
+  
+  return media;
+
+}

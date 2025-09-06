@@ -316,6 +316,7 @@ class UI32ESP:
 
     def update_time(self, millis_now):
         self.time_history.append((millis_now))
+        print(millis_now)
         # limpa textos antigos
         for t in self.time_texts:
             t.remove()

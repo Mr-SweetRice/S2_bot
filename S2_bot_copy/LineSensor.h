@@ -18,6 +18,8 @@ private:
   uint16_t _raw[kCount];
   bool     _dig[kCount];
   int _normalized[kCount];
+  float _last_pos=0;
+  bool _seguir =0;
 
 public:
   LineSensor(const uint8_t pins[kCount], bool invert=false, uint16_t threshold=60, bool debug=false)
@@ -69,20 +71,22 @@ public:
 float linePosition() {
   LineSensor::normalized();
   float num = 0, den = 0;
-  bool seguir =0;
   for (int i = 0; i < kCount; i++) {
     num += _normalized[i] * i;
     den += _normalized[i];
   }
-  // for (int i = 0; i < kCount; i++) {
-  //   if(_normalized[i] >90){
-  //     seguir =1;
-  //   }else{break;}
-  //   if(_normalized[i] <10){
-  //     seguir =1;
-  //   }else{break;}
-  // }
-  // if(seguir)return 0;
+  for (int i = 0; i < kCount; i++) {
+    if(_normalized[i] >90){
+      _seguir =1;
+    }else{_seguir =0; break;}
+    if(_normalized[i] <10){
+      _seguir =1;
+    }else{_seguir =0; break; }
+  }
+  if(_seguir){
+    Serial.println("POS ANTERIOR");
+    return _last_pos;
+  }
   if (den < 1e-3) return 0; // nenhum sensor ativo
 
   // posição média no índice (0 à esquerda, 7 à direita)
@@ -93,6 +97,7 @@ float linePosition() {
   float pos = ((idx - 3.5f) / 3.5f) * 100.0f;
   if (pos < -100) pos = -100;
   if (pos >  100) pos =  100;
+  _last_pos=pos;
   return pos;
 }
 
