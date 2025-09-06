@@ -12,9 +12,15 @@ const int BENCL_A = 18;
 const int BENCL_B = 5;
 const int AENCL_A = 17;
 const int AENCL_B = 16;
-float rpmL,rpmR;
+int p,i,d;
+unsigned long last_time =0;
+int error,last_error=0;
+float integral,derivative=0;
+int u=0;
 const uint8_t PINS[8] = {39,36,34,35,32,33,25,26};
-int rpms[8] = {100, 200, 300, 400, 500, 600, 700, 800};
+// int rpms[8] = {100, 200, 300, 400, 500, 600, 700, 800};
+// uint16_t sensors[8] = {1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000};
+// uint8_t digital_sensors[8] = {1, 0, 1, 0, 1, 0, 1, 0};
 LineSensor sensorLinha(PINS, false, 60, false);// Pinos, inverter linha branco-preto, uso do sensor 0-100%, debug
 BLEConnection ble; 
 Motor motorL(PWMB,BIN1,BIN2,BENCL_A,BENCL_B );
@@ -35,14 +41,9 @@ void setup() {
 void loop() {
     // int pos = sensorLinha.linePosition();
     ble.handleClientRequests();
-    // uint16_t sensors[8] = {1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000};
-    // uint8_t digital_sensors[8] = {1, 0, 1, 0, 1, 0, 1, 0};
-    if(changeRpm.pronto()){
-      int i = random(0,7);
-      target = rpms[i];
-    }
-    motorR.rpmMotor(target,1);
-    motorL.rpmMotor(target,1);
+    // if(changeRpm.pronto()){
+    //   int i = random(0,7);
+    //   target = rpms[i];
+    // }
     // // ble.setTelemetryData(sensors, motorL.getRpm(), 200,digital_sensors );
-    ble.setPosition(target,motorL.getRpm(),motorR.getRpm());
     }
