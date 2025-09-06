@@ -28,7 +28,7 @@ LINE_FMT = "<HB"
 LINE_SIZE = struct.calcsize(LINE_FMT)
 TIME_FMT = "<I"
 TIME_SIZE = struct.calcsize(TIME_FMT)
-POS_FMT = "<HHH"   
+POS_FMT = "<Hhh"   
 POS_SIZE = struct.calcsize(POS_FMT)
 
 # Fila de updates UI
@@ -98,14 +98,14 @@ class UI32ESP:
 
         # Gráfico posição (target x real) ao longo do tempo
         self.ax_pos = self.fig.add_subplot(grid[2, 0:2])
-        # (self.line_target,) = self.ax_pos.plot([], [], color="tab:blue")     # sem label
+        (self.line_target,) = self.ax_pos.plot([], [], color="tab:blue")     # sem label
         (self.line_real,)   = self.ax_pos.plot([], [], color="tab:orange")   # sem label
         (self.line_real2,) = self.ax_pos.plot([], [], color="tab:red")
         self.hline_target   = self.ax_pos.axhline(0, linestyle="--", color="tab:green")  # sem label
         self.ax_pos.set_xlabel("t (s)")
         self.ax_pos.set_ylabel("posição")
         self.ax_pos.set_xlim(0, 10)
-        self.ax_pos.set_ylim(0, 1000)   # mudar max grafico
+        self.ax_pos.set_ylim(-100, 100)   # mudar max grafico
 
 
         # barras RPM

@@ -37,8 +37,8 @@ typedef struct __attribute__((packed)) {
 
 typedef struct __attribute__((packed)) {
   uint16_t  target;
-  uint16_t  real_data;
-  uint16_t  real_data2;
+  int16_t  real_data;
+  int16_t  real_data2;
 } PositionPacket;
 
 static void startAdv() {
@@ -128,7 +128,7 @@ public:
         timeChar->createDescriptor("2901")->setValue("tempo(uint32)");
 
         posChar = svc->createCharacteristic(POS_CHAR_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
-        posChar->createDescriptor("2901")->setValue("target(uint16), real(uint16), real2(uint16)");
+        posChar->createDescriptor("2901")->setValue("target(uint16), real(int16), real2(int16)");
 
         // CONTROL
         controlChar = svc->createCharacteristic(CONTROL_CHAR_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR | NIMBLE_PROPERTY::NOTIFY);
@@ -200,7 +200,7 @@ public:
 
     }
 
-    void setPosition(uint16_t target,uint16_t real_data,uint16_t real_data2){
+    void setPosition(uint16_t target,int16_t real_data,int16_t real_data2){
         pos.target = target; 
         pos.real_data = real_data;
         pos.real_data2 = real_data2;

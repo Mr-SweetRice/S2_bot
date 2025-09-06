@@ -2,6 +2,7 @@
 #include <BLEConnection.h>
 #include <TimerMicros.h>
 #include <Motor.h>
+#include <SHControl.h>
 const int PWMA = 13;
 const int AIN1 = 14;
 const int AIN2 = 27;
@@ -12,11 +13,7 @@ const int BENCL_A = 18;
 const int BENCL_B = 5;
 const int AENCL_A = 17;
 const int AENCL_B = 16;
-int p,i,d;
-unsigned long last_time =0;
-int error,last_error=0;
-float integral,derivative=0;
-int u=0;
+
 const uint8_t PINS[8] = {39,36,34,35,32,33,25,26};
 // int rpms[8] = {100, 200, 300, 400, 500, 600, 700, 800};
 // uint16_t sensors[8] = {1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000};
@@ -31,16 +28,31 @@ unsigned long tl=0;
 
 void setup() {
     Serial.begin(115200);
+    sensorLinha.begin();
+    sensorLinha.calibrate();
     ble.begin();
-    // sensorLinha.begin();
-    // sensorLinha.calibrate();
+
     motorR.begin();
     motorL.begin();
 }
 
 void loop() {
-    // int pos = sensorLinha.linePosition();
     ble.handleClientRequests();
+    int pos = sensorLinha.linePosition();
+    int u =control(pos,0,gP,gI,gD);
+    int mtL= 200 + u;int mtR= 200 - u;
+    mtL = constrain(mtL,0,800); mtR = constrain(mtR,0,800);
+    motorR.rpmMotor(mtR, 1);
+    // ble.setPosition(0, pos, 0);
+    // Serial.println(pos);
+    // Serial.print(" | ");
+    // Serial.print(mtL);
+    // Serial.print(" | ");
+    // Serial.print(mtR);
+    // Serial.print(" | ");
+    // Serial.println(u);
+    
+
     // if(changeRpm.pronto()){
     //   int i = random(0,7);
     //   target = rpms[i];
