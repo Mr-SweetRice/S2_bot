@@ -5,7 +5,7 @@
 class LineSensor {
 public:
   static constexpr uint8_t  kCount   = 8;
-  static constexpr uint16_t kAdcMax  = 4095;
+  static constexpr uint16_t kAdcMax  = 3000;
   static constexpr uint32_t kCalibUs = 4000000; // 4 s
 
 private:
