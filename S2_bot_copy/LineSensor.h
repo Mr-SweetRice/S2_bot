@@ -69,10 +69,20 @@ public:
 float linePosition() {
   LineSensor::normalized();
   float num = 0, den = 0;
+  bool seguir =0;
   for (int i = 0; i < kCount; i++) {
     num += _normalized[i] * i;
     den += _normalized[i];
   }
+  // for (int i = 0; i < kCount; i++) {
+  //   if(_normalized[i] >90){
+  //     seguir =1;
+  //   }else{break;}
+  //   if(_normalized[i] <10){
+  //     seguir =1;
+  //   }else{break;}
+  // }
+  // if(seguir)return 0;
   if (den < 1e-3) return 0; // nenhum sensor ativo
 
   // posição média no índice (0 à esquerda, 7 à direita)
@@ -91,7 +101,7 @@ float linePosition() {
     for (int i = 0; i < 8; i++) {
         uint16_t minU = _min[i]+((kAdcMax-_min[i])*(100-_threshold)/100);
         uint16_t v = analogRead(_pins[i]);
-        _normalized[i] = map(v, minU, kAdcMax, 0, 100);
+        _normalized[i] = map(v, minU, kAdcMax, 100, 0);
         _normalized[i] = constrain(_normalized[i], 0, 100);
        if (_debug){Serial.print(" | "); Serial.print(_normalized[i]);}
 

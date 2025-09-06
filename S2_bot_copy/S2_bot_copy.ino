@@ -18,13 +18,14 @@ const uint8_t PINS[8] = {39,36,34,35,32,33,25,26};
 // int rpms[8] = {100, 200, 300, 400, 500, 600, 700, 800};
 // uint16_t sensors[8] = {1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000};
 // uint8_t digital_sensors[8] = {1, 0, 1, 0, 1, 0, 1, 0};
-LineSensor sensorLinha(PINS, false, 60, false);// Pinos, inverter linha branco-preto, uso do sensor 0-100%, debug
+LineSensor sensorLinha(PINS, true, 80, true);// Pinos, inverter linha branco-preto, uso do sensor 0-100%, debug
 BLEConnection ble; 
 Motor motorL(PWMB,BIN1,BIN2,BENCL_A,BENCL_B );
 Motor motorR(PWMA,AIN1,AIN2,AENCL_A,AENCL_B );
 uint16_t target=500;
-TimerMicros changeRpm(6000000);
+TimerMicros changeControl(15000);
 unsigned long tl=0;
+int mtL,mtR;
 
 void setup() {
     Serial.begin(115200);
@@ -37,12 +38,18 @@ void setup() {
 }
 
 void loop() {
-    ble.handleClientRequests();
+    // ble.handleClientRequests();
     int pos = sensorLinha.linePosition();
-    int u =control(pos,0,gP,gI,gD);
-    int mtL= 200 + u;int mtR= 200 - u;
-    mtL = constrain(mtL,0,800); mtR = constrain(mtR,0,800);
+    if(changeControl.pronto()){
+      int u =control(pos,0,gP,gI,gD);
+      mtL= 200 - u;mtR= 200 + u;
+      mtL = constrain(mtL,0,800); mtR = constrain(mtR,0,800);
+
+    };
+    ble.setPosition(0, pos, 0);
+    motorL.rpmMotor(mtL, 1);
     motorR.rpmMotor(mtR, 1);
+
     // ble.setPosition(0, pos, 0);
     // Serial.println(pos);
     // Serial.print(" | ");

@@ -115,4 +115,8 @@ class Motor{
 
 
   }
+
+  void printPwm(){
+    Serial.println(_upwm);
+  }
 };
