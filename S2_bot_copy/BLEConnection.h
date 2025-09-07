@@ -13,9 +13,14 @@
 #define P_CHAR_UUID         "9cec4ad9-5ac2-4bce-a6fc-95807282c60f"
 #define I_CHAR_UUID         "f99b0cad-3ebe-46a9-b68a-265fa7be0fe6"
 #define D_CHAR_UUID         "d1f23061-e268-4e96-8e56-974711ab37bb"
+#define VEL_BASE_CHAR_UUID  "7a5f2b8b-3f3c-4f2a-9d1b-1e2f3a4b5c60"
+#define VEL_CURVA_CHAR_UUID "9b1e0c77-2a64-4f6b-83af-0c2d9a7e5b31"
 
 volatile uint8_t controlFlag = 0;
 float gP = 0.0f, gI = 0.0f, gD = 0.0f;
+uint16_t gVelBase = 0;
+uint16_t gVelCurva = 0;
+
 
 static uint32_t lastAdvKick;
 
@@ -49,6 +54,20 @@ static void startAdv() {
     NimBLEDevice::startAdvertising();
     lastAdvKick = millis();
 }
+class ControlCallbacksU16 : public NimBLECharacteristicCallbacks {
+  uint16_t* ref;
+public:
+  ControlCallbacksU16(uint16_t* r) : ref(r) {}
+  void onWrite(NimBLECharacteristic* c) {
+    std::string v = c->getValue();
+    if (v.size() >= 2) {
+      memcpy(ref, v.data(), 2);
+      c->setValue((uint8_t*)ref, 2);
+      c->notify();
+    }
+  }
+  void onWrite(NimBLECharacteristic* c, NimBLEConnInfo&) override { onWrite(c); }
+};
 
 class ControlCallbacks : public NimBLECharacteristicCallbacks {
   void onWrite(NimBLECharacteristic* c) {
@@ -90,6 +109,8 @@ public:
 private:
     NimBLECharacteristic* dataChar;
     NimBLECharacteristic* controlChar;
+    NimBLECharacteristic* velBaseChar;
+    NimBLECharacteristic* velCurvaChar;
     NimBLECharacteristic* lineChar;
     NimBLECharacteristic* timeChar;
     NimBLECharacteristic* pChar;
@@ -152,6 +173,20 @@ public:
         dChar->createDescriptor("2901")->setValue("D(float32)");
         dChar->setCallbacks(new ControlCallbacksPID(&gD));
         dChar->setValue((uint8_t*)&gD, 4);
+        // VEL_BASE (uint16)
+        velBaseChar = svc->createCharacteristic(VEL_BASE_CHAR_UUID,
+            NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR | NIMBLE_PROPERTY::NOTIFY);
+        velBaseChar->createDescriptor("2901")->setValue("vel_base(uint16)");
+        velBaseChar->setCallbacks(new ControlCallbacksU16(&gVelBase));
+        velBaseChar->setValue((uint8_t*)&gVelBase, 2);
+
+        // VEL_CURVA (uint16)
+        velCurvaChar = svc->createCharacteristic(VEL_CURVA_CHAR_UUID,
+            NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR | NIMBLE_PROPERTY::NOTIFY);
+        velCurvaChar->createDescriptor("2901")->setValue("vel_curva(uint16)");
+        velCurvaChar->setCallbacks(new ControlCallbacksU16(&gVelCurva));
+        velCurvaChar->setValue((uint8_t*)&gVelCurva, 2);
+
 
         svc->start();
         startAdv();
@@ -207,6 +242,18 @@ public:
         posChar->setValue((uint8_t*)&pos, sizeof(pos));
         posChar->notify();
     }
+
+    void notifyPID() {
+        pChar->setValue((uint8_t*)&gP, 4);
+        pChar->notify();
+
+        iChar->setValue((uint8_t*)&gI, 4);
+        iChar->notify();
+
+        dChar->setValue((uint8_t*)&gD, 4);
+        dChar->notify();
+    }
+
 
 };
 #endif
