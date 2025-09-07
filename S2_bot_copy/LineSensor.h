@@ -71,22 +71,18 @@ public:
 float linePosition() {
   LineSensor::normalized();
   float num = 0, den = 0;
+  float soma =0;
   for (int i = 0; i < kCount; i++) {
     num += _normalized[i] * i;
     den += _normalized[i];
   }
-  for (int i = 0; i < kCount; i++) {
-    if(_normalized[i] >90){
-      _seguir =1;
-    }else{_seguir =0; break;}
-    if(_normalized[i] <10){
-      _seguir =1;
-    }else{_seguir =0; break; }
+    for (int i = 0; i < kCount; i++) {
+    soma += _normalized[i];
   }
-  if(_seguir){
-    Serial.println("POS ANTERIOR");
+  if(soma<5){
     return _last_pos;
   }
+
   if (den < 1e-3) return 0; // nenhum sensor ativo
 
   // posição média no índice (0 à esquerda, 7 à direita)
